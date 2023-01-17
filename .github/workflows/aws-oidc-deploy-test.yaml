@@ -1,9 +1,9 @@
 name: aws_oidc deploy test
 on:
   workflow_dispatch: {}
-  pull_request:
-    branches: 
-    - main
+    # pull_request:
+    #   branches: 
+    #   - main
 
 concurrency:
   group: aws-${{ github.head_ref || github.run_id }}

@@ -1,8 +1,8 @@
 name: e2e-test
 on:
   # Runs every day at 3:12 UTC.
-  schedule:
-    - cron: '12 3 * * *'
+  # schedule:
+  #   - cron: '12 3 * * *'
   # Allow manually triggered runs.
   workflow_dispatch:
 
@@ -41,8 +41,8 @@ jobs:
         name: Authenticate to AWS
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          # Role in cloud-deploy-infra-tests-0 account.
-          role-to-assume: arn:aws:iam::178882378957:role/e2e-test-runner
+          # Role in avritt-dev account.
+          role-to-assume: arn:aws:iam::096708045127:role/e2e-test-runner
           aws-region: us-east-1
 
       - name: Pre nuke

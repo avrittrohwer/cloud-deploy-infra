@@ -6,11 +6,11 @@ account-blocklist:
   - "664198874744" # Google.org Works AWS account, holds long-lived staging deployments. Should never be nuked.
 
 accounts:
-  "178882378957": # cloud-deploy-infra-tests-0 AWS account.
+  "096708045127": # avritt-dev AWS account.
     filters:
       ACMCertificate:
         - property: "DomainName"
-          value: "cloud-deploy-infra-tests-0.civiform.dev"
+          value: "avritt-dev.civiform.dev"
       IAMOpenIDConnectProvider:
         - type: contains
           value: "oidc-provider/token.actions.githubusercontent.com"
