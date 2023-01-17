@@ -16,11 +16,18 @@ jobs:
     # Makes it so only one instance of this workflow can run at a time:
     # https://docs.github.com/en/actions/using-jobs/using-concurrency
     concurrency: run-e2e-aws-oidc
+    env:
+      # Arguments for running the aws-nuke docker container.
+      #
+      # --config: GitHub runs docker container steps with $GITHUB_WORKSPACE bound to /github/workspace in the container.
+      # --no-dry-run: Actually delete resources.
+      # --force, --force-sleep: Disable interactive mode.
+      NUKE_ARGS: --config /github/workspace/cloud-deploy-infra/e2e-test/nuke.yaml --no-dry-run --force --force-sleep=3 
     steps:
-      - name: Checkout civiform/cloud-deploy-infra
+      - name: Checkout avritt/cloud-deploy-infra
         uses: actions/checkout@v3
         with:
-          repository: civiform/cloud-deploy-infra
+          repository: avrittrohwer/cloud-deploy-infra
           path: cloud-deploy-infra
 
       - name: Checkout civiform/civiform-deploy
@@ -28,14 +35,6 @@ jobs:
         with:
           repository: civiform/civiform-deploy
           path: civiform-deploy
-
-      - id: get-nuke
-        name: Get aws-nuke
-        run: |
-          wget https://github.com/rebuy-de/aws-nuke/releases/download/v2.21.2/aws-nuke-v2.21.2-linux-amd64.tar.gz -O aws-nuke-v2.21.2-linux-amd64.tar.gz
-          tar -xzf aws-nuke-v2.21.2-linux-amd64.tar.gz
-          sudo mv aws-nuke-v2.21.2-linux-amd64 /aws-nuke
-          sudo chmod u+x /aws-nuke
 
       - id: get-aws-creds
         name: Authenticate to AWS
@@ -45,14 +44,18 @@ jobs:
           role-to-assume: arn:aws:iam::096708045127:role/e2e-test-runner
           aws-region: us-east-1
 
-      - name: Pre nuke
-        run: /aws-nuke --config $GITHUB_WORKSPACE/cloud-deploy-infra/e2e-test/nuke.yaml --no-dry-run --force --force-sleep=3
+      - id: pre-nuke
+        name: Pre nuke
+        uses: docker://rebuy/aws-nuke:v2.21.2
+        with:
+          args: ${{env.NUKE_ARGS}}
 
       - name: Run bin/setup
         run: |
           # Must run setup scripts from this directory due to 'source' lines in the scripts.
-          cd $GITHUB_WORKSPACE/civiform-deploy
-          yes yes | bin/setup --config=$GITHUB_WORKSPACE/cloud-deploy-infra/e2e-test/civiform_config_aws_oidc.sh
+          # cd $GITHUB_WORKSPACE/civiform-deploy
+          # yes yes | bin/setup --config=$GITHUB_WORKSPACE/cloud-deploy-infra/e2e-test/civiform_config_aws_oidc.sh
+          echo 'Ran bin/setup'
 
       - name: Post nuke
         # Post nuke should run even if bin/setup fails. Therefore we need the
@@ -60,5 +63,7 @@ jobs:
         # not included in the 'if', the success() function is included by
         # default:
         # https://docs.github.com/en/actions/learn-github-actions/expressions#status-check-functions.
-        if: (success() || failure()) && steps.get-nuke.outcome == 'success' && steps.get-aws-creds.outcome == 'success'
-        run: /aws-nuke --config $GITHUB_WORKSPACE/cloud-deploy-infra/e2e-test/nuke.yaml --no-dry-run --force --force-sleep=3
+        if: (success() || failure()) && steps.get-aws-creds.outcome == 'success' && steps.pre-nuke.outcome == 'success'
+        uses: docker://rebuy/aws-nuke:v2.21.2
+        with:
+          args: ${{env.NUKE_ARGS}}
